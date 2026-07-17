@@ -1,0 +1,33 @@
+# Maven build output
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# Runtime/generated data
+uploads/
+thumbnails/
+
+# Logs
+*.log
+logs/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+.env.*
+!*.example

@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Redis缓存服务（可选）
+  redis:
+    image: redis:7-alpine
+    container_name: image_management_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  # 图片管理系统后端应用
+  app:
+    build: .
+    container_name: image_management_app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # 数据库配置 (指向宿主机)
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/photo_manage?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_PROFILES_ACTIVE: docker
+      APP_UPLOAD_PATH: uploads
+      APP_THUMBNAIL_PATH: thumbnails
+      
+      # Redis配置
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      
+      # 应用配置
+      SERVER_PORT: 8080
+      
+      # 文件上传配置
+      MAX_FILE_SIZE: 10MB
+      MAX_REQUEST_SIZE: 50MB
+      
+      # 网络超时配置
+      SERVER_TOMCAT_CONNECTION_TIMEOUT: 60000
+      SERVER_TOMCAT_KEEP_ALIVE_TIMEOUT: 60000
+    volumes:
+      - upload_data:/app/uploads
+      - thumbnail_data:/app/thumbnails
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx反向代理（可选）
+  nginx:
+    image: nginx:alpine
+    container_name: image_management_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - upload_data:/usr/share/nginx/html/uploads
+      - thumbnail_data:/usr/share/nginx/html/thumbnails
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+# 数据卷
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  upload_data:
+    driver: local
+  thumbnail_data:
+    driver: local
+
+# 网络
+networks:
+  app-network:
+    driver: bridge

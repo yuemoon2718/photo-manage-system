@@ -1,0 +1,43 @@
+server:
+  port: 8080
+
+spring:
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+  mvc:
+    view:
+      suffix: .html
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations: classpath:/static/,file:./uploads/,file:./thumbnails/
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+  datasource:
+    url: jdbc:mysql://localhost:3306/photo_manage?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# 应用配置
+app:
+  upload:
+    path: uploads
+  thumbnail:
+    path: thumbnails
+
+logging:
+  level:
+    root: info
+
+

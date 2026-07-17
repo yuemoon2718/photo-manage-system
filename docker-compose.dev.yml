@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # 开发环境配置
+  app:
+    build: .
+    container_name: image_management_app_dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # 开发环境数据库配置
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/image_management_system?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: appuser
+      SPRING_DATASOURCE_PASSWORD: apppassword123
+      
+      # 开发环境配置
+      SPRING_PROFILES_ACTIVE: dev,docker
+      SERVER_PORT: 8080
+      
+      # 开发模式配置
+      SPRING_DEVTOOLS_RESTART_ENABLED: true
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: true
+      
+      # 文件上传配置
+      UPLOAD_PATH: /app/uploads
+      MAX_FILE_SIZE: 10MB
+      MAX_REQUEST_SIZE: 10MB
+    volumes:
+      - upload_data:/app/uploads
+      - ./logs:/app/logs
+      # 开发时挂载源代码（热重载）
+      - ./src:/app/src
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+    command: ["./mvnw", "spring-boot:run", "-Dspring-boot.run.jvmArguments='-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:5005'"]
+    ports:
+      - "8080:8080"
+      - "5005:5005"  # 调试端口
+
+  # 开发环境MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: image_management_mysql_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_DATABASE: image_management_system
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword123
+    ports:
+      - "3307:3306"  # 使用不同端口避免冲突
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+      - ./database_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - app-network
+    command: --default-authentication-plugin=mysql_native_password
+
+# 数据卷
+volumes:
+  mysql_dev_data:
+    driver: local
+  upload_data:
+    driver: local
+
+# 网络
+networks:
+  app-network:
+    driver: bridge
